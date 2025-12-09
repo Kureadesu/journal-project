@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Helper function to validate entry data
+    function isValidEntry() {
+      return request.resource.data.keys().hasAll(['title', 'content', 'mood_tags', 'is_draft', 'timestamp'])
+        && request.resource.data.title is string
+        && request.resource.data.content is string
+        && request.resource.data.mood_tags is list
+        && request.resource.data.is_draft is bool
+        && request.resource.data.timestamp is timestamp;
+    }
+    
+    // Helper function to validate user settings
+    function isValidSettings() {
+      return request.resource.data.settings is map;
+    }
+    
+    // Rules for users collection
+    match /users/{userId} {
+      // Users can read and write their own document
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && isValidSettings();
+      allow delete: if false; // Prevent accidental deletion of user documents
+      
+      // Rules for journal entries subcollection
+      match /journal_entries/{entryId} {
+        // Users can only access their own entries
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidEntry();
+        allow update: if isOwner(userId) && isValidEntry();
+        allow delete: if isOwner(userId);
+        
+        // Limit entry size to prevent abuse (5MB limit)
+        allow create, update: if request.resource.data.content.size() < 5242880;
+      }
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,84 +1,346 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Entry — Unsay</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css" />
-  </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <div class="container">
-        <a class="navbar-brand" href="app.html">Unsay</a>
-        <div class="d-flex">
-          <button id="entry-back" class="btn btn-link">Back</button>
-        </div>
-      </div>
-    </nav>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Entry – The Journal Project</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/editor.css" />
+  <link rel="stylesheet" href="css/dark-mode.css" />
+  <style>
+    /* Enhanced toolbar */
+    .editor-toolbar {
+      background: var(--hover);
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      border: 1px solid var(--border);
+    }
 
-    <main class="container py-4">
-      <div class="card p-3">
-        <input id="entry-title" class="form-control mb-2" placeholder="Title (optional)" />
-        <div class="editor-toolbar mb-2 d-flex gap-2">
-          <button id="bold-btn" class="btn btn-sm btn-outline-secondary"><strong>B</strong></button>
-          <button id="italic-btn" class="btn btn-sm btn-outline-secondary"><em>I</em></button>
-          <input id="mood" class="form-control form-control-sm" placeholder="mood tags (comma-separated)" style="max-width:240px" />
-          <div class="ms-auto d-flex gap-2">
-            <button id="save-btn" class="btn btn-outline-secondary btn-sm">Save Draft</button>
-            <button id="publish-btn" class="btn btn-primary btn-sm">Publish</button>
-          </div>
-        </div>
+    .toolbar-group {
+      display: flex;
+      gap: 0.25rem;
+      padding-right: 0.5rem;
+      border-right: 1px solid var(--border);
+    }
 
-        <div id="editor" contenteditable="true" class="editor form-control" style="min-height:50vh"></div>
-      </div>
-    </main>
+    .toolbar-group:last-child {
+      border-right: none;
+    }
 
-    <script type="module">
-      import { onAuthStateChangedListener } from './js/auth.js';
-      import { getEntry } from './js/database.js';
-      import { setCurrentContext, loadEntryToEditor, saveAsDraft, publishEntry, format, startAutosave } from './js/editor.js';
+    .toolbar-btn {
+      min-width: 36px;
+      height: 36px;
+      padding: 0.5rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
 
-      let uid = null;
-      function getQueryParam(name) {
-        return new URLSearchParams(location.search).get(name);
+    .toolbar-btn:hover {
+      background: var(--card);
+      border-color: var(--border);
+    }
+
+    .toolbar-btn:active {
+      transform: scale(0.95);
+    }
+
+    .toolbar-btn[data-active="true"] {
+      background: var(--accent);
+      color: white;
+    }
+
+    #mood {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--hover);
+      color: var(--text-primary);
+    }
+
+    .action-buttons {
+      margin-left: auto;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* Mood tag suggestions */
+    .mood-suggestions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: var(--hover);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .mood-suggestion {
+      padding: 0.35rem 0.75rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    .mood-suggestion:hover {
+      background: var(--accent);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .mood-suggestion.selected {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Word count and stats */
+    #word-count {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      padding: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .toolbar-group {
+        border-right: none;
+        padding-right: 0;
       }
 
-      onAuthStateChangedListener(async (user) => {
-        if (!user) return location.href = 'index.html';
-        uid = user.uid;
-        setCurrentContext(uid, null);
-        const entryId = getQueryParam('entryId');
-        if (entryId) {
-          const entry = await getEntry(uid, entryId);
-          if (entry) setCurrentContext(uid, entry.id);
-          loadEntryToEditor(entry || { title: '', content: '' });
+      .action-buttons {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+
+      .action-buttons button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav style="background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem;">
+    <div class="container" style="max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+      <a href="app.html" style="text-decoration: none; color: var(--text-primary); font-size: 1.5rem; font-weight: 600;">The Journal Project</a>
+      <button id="entry-back" style="background: transparent; border: 1px solid var(--border); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">← Back</button>
+    </div>
+  </nav>
+
+  <main class="container" style="max-width: 900px; margin: 0 auto; padding: 2rem 1rem;">
+    <div style="background: var(--card); padding: 2rem; border-radius: 12px; border: 1px solid var(--border);">
+      <input id="entry-title" placeholder="Title (optional)" style="width: 100%; padding: 0.75rem; font-size: 1.5rem; font-weight: 600; border: none; border-bottom: 2px solid var(--border); background: transparent; color: var(--text-primary); margin-bottom: 1rem;" />
+      
+      <!-- Mood Suggestions -->
+      <div class="mood-suggestions">
+        <span style="color: var(--text-secondary); font-size: 0.9rem; margin-right: 0.5rem;">Quick moods:</span>
+        <span class="mood-suggestion" data-mood="happy">😊 Happy</span>
+        <span class="mood-suggestion" data-mood="grateful">🙏 Grateful</span>
+        <span class="mood-suggestion" data-mood="reflective">🤔 Reflective</span>
+        <span class="mood-suggestion" data-mood="anxious">😰 Anxious</span>
+        <span class="mood-suggestion" data-mood="excited">🎉 Excited</span>
+        <span class="mood-suggestion" data-mood="peaceful">😌 Peaceful</span>
+        <span class="mood-suggestion" data-mood="sad">😢 Sad</span>
+        <span class="mood-suggestion" data-mood="motivated">💪 Motivated</span>
+      </div>
+
+      <!-- Enhanced Toolbar -->
+      <div class="editor-toolbar">
+        <div class="toolbar-group">
+          <button class="toolbar-btn" id="undo-btn" title="Undo (Ctrl+Z)">↶</button>
+          <button class="toolbar-btn" id="redo-btn" title="Redo (Ctrl+Shift+Z)">↷</button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="toolbar-btn" id="bold-btn" title="Bold (Ctrl+B)"><strong>B</strong></button>
+          <button class="toolbar-btn" id="italic-btn" title="Italic (Ctrl+I)"><em>I</em></button>
+          <button class="toolbar-btn" id="underline-btn" title="Underline (Ctrl+U)"><u>U</u></button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="toolbar-btn" id="h1-btn" title="Heading 1">H1</button>
+          <button class="toolbar-btn" id="h2-btn" title="Heading 2">H2</button>
+          <button class="toolbar-btn" id="h3-btn" title="Heading 3">H3</button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="toolbar-btn" id="bullet-btn" title="Bullet List">•</button>
+          <button class="toolbar-btn" id="number-btn" title="Numbered List">1.</button>
+          <button class="toolbar-btn" id="quote-btn" title="Quote">"</button>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="toolbar-btn" id="link-btn" title="Insert Link (Ctrl+K)">🔗</button>
+          <button class="toolbar-btn" id="clear-btn" title="Clear Formatting">✕</button>
+        </div>
+
+        <input id="mood" placeholder="Add custom mood tags (comma-separated)" />
+
+        <div class="action-buttons">
+          <button id="save-btn" style="padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; cursor: pointer;">💾 Save Draft</button>
+          <button id="publish-btn" style="padding: 0.5rem 1rem; background: var(--accent); border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: 600;">✓ Publish</button>
+        </div>
+      </div>
+
+      <div id="word-count"></div>
+
+      <div id="editor" contenteditable="true" style="min-height: 50vh; padding: 1.5rem; border: 1px dashed var(--border); border-radius: 8px; background: var(--hover); color: var(--text-primary); line-height: 1.8; outline: none;"></div>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { onAuthStateChangedListener } from './js/auth.js';
+    import { getEntry } from './js/database.js';
+    import { 
+      setCurrentContext, 
+      loadEntryToEditor, 
+      saveAsDraft, 
+      publishEntry, 
+      format,
+      formatHeading,
+      insertLink,
+      insertList,
+      insertQuote,
+      clearFormatting,
+      undo,
+      redo,
+      startAutosave 
+    } from './js/editor.js';
+    import { showToast } from './js/toast.js';
+    import { showLoading, hideLoading } from './js/loading.js';
+
+    let uid = null;
+    let selectedMoods = new Set();
+    
+    function getQueryParam(name) {
+      return new URLSearchParams(location.search).get(name);
+    }
+
+    // Mood suggestions
+    document.querySelectorAll('.mood-suggestion').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mood = btn.dataset.mood;
+        if (selectedMoods.has(mood)) {
+          selectedMoods.delete(mood);
+          btn.classList.remove('selected');
         } else {
-          loadEntryToEditor({ title: '', content: '' });
+          selectedMoods.add(mood);
+          btn.classList.add('selected');
         }
-        startAutosave();
+        updateMoodInput();
       });
+    });
 
-      document.getElementById('save-btn').addEventListener('click', async () => {
+    function updateMoodInput() {
+      const moodInput = document.getElementById('mood');
+      const customMoods = moodInput.value.split(',')
+        .map(m => m.trim())
+        .filter(m => m && !Array.from(selectedMoods).includes(m));
+      
+      const allMoods = [...selectedMoods, ...customMoods];
+      moodInput.value = allMoods.join(', ');
+    }
+
+    onAuthStateChangedListener(async (user) => {
+      if (!user) return location.href = 'index.html';
+      uid = user.uid;
+      setCurrentContext(uid, null);
+      
+      const entryId = getQueryParam('entryId');
+      if (entryId) {
         try {
-          await saveAsDraft();
-          alert('Saved draft.');
-        } catch (e) { alert(e.message || 'Save failed'); }
-      });
+          showLoading('Loading entry...');
+          const entry = await getEntry(uid, entryId);
+          if (entry) {
+            setCurrentContext(uid, entry.id);
+            loadEntryToEditor(entry);
+            
+            // Load mood tags
+            if (entry.mood_tags) {
+              entry.mood_tags.forEach(mood => {
+                const btn = document.querySelector(`[data-mood="${mood}"]`);
+                if (btn) {
+                  selectedMoods.add(mood);
+                  btn.classList.add('selected');
+                }
+              });
+              updateMoodInput();
+            }
+          } else {
+            loadEntryToEditor({ title: '', content: '' });
+          }
+        } catch (error) {
+          console.error('Error loading entry:', error);
+          showToast('Failed to load entry', 'error');
+          loadEntryToEditor({ title: '', content: '' });
+        } finally {
+          hideLoading();
+        }
+      } else {
+        loadEntryToEditor({ title: '', content: '' });
+      }
+      
+      startAutosave();
+    });
 
-      document.getElementById('publish-btn').addEventListener('click', async () => {
-        const mood = document.getElementById('mood').value.split(',').map(s => s.trim()).filter(Boolean);
-        try {
-          await publishEntry(mood);
-          alert('Published.');
-          location.href = 'app.html';
-        } catch (e) { alert(e.message || 'Publish failed'); }
-      });
+    // Toolbar buttons
+    document.getElementById('bold-btn').addEventListener('click', () => format('bold'));
+    document.getElementById('italic-btn').addEventListener('click', () => format('italic'));
+    document.getElementById('underline-btn').addEventListener('click', () => format('underline'));
+    document.getElementById('h1-btn').addEventListener('click', () => formatHeading(1));
+    document.getElementById('h2-btn').addEventListener('click', () => formatHeading(2));
+    document.getElementById('h3-btn').addEventListener('click', () => formatHeading(3));
+    document.getElementById('bullet-btn').addEventListener('click', () => insertList(false));
+    document.getElementById('number-btn').addEventListener('click', () => insertList(true));
+    document.getElementById('quote-btn').addEventListener('click', () => insertQuote());
+    document.getElementById('link-btn').addEventListener('click', () => insertLink());
+    document.getElementById('clear-btn').addEventListener('click', () => clearFormatting());
+    document.getElementById('undo-btn').addEventListener('click', () => undo());
+    document.getElementById('redo-btn').addEventListener('click', () => redo());
 
-      document.getElementById('bold-btn').addEventListener('click', () => format('bold'));
-      document.getElementById('italic-btn').addEventListener('click', () => format('italic'));
-      document.getElementById('entry-back').addEventListener('click', () => location.href = 'app.html');
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      try {
+        await saveAsDraft();
+      } catch (e) { 
+        console.error('Save error:', e);
+      }
+    });
+
+    document.getElementById('publish-btn').addEventListener('click', async () => {
+      const mood = document.getElementById('mood').value.split(',').map(s => s.trim()).filter(Boolean);
+      try {
+        await publishEntry(mood);
+        setTimeout(() => location.href = 'app.html', 1000);
+      } catch (e) { 
+        console.error('Publish error:', e);
+      }
+    });
+
+    document.getElementById('entry-back').addEventListener('click', () => location.href = 'app.html');
+
+    // Keyboard shortcuts info
+    showToast('💡 Tip: Use Ctrl+B for bold, Ctrl+I for italic, Ctrl+S to save', 'info', 5000);
+  </script>
+</body>
 </html>

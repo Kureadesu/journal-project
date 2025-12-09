@@ -1,0 +1,139 @@
+/* Additional editor-specific styles */
+
+.editor {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.05rem;
+}
+
+.editor p {
+  margin-bottom: 1em;
+}
+
+.editor strong {
+  font-weight: 700;
+}
+
+.editor em {
+  font-style: italic;
+}
+
+.editor h1, .editor h2, .editor h3 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.editor h1 {
+  font-size: 2em;
+}
+
+.editor h2 {
+  font-size: 1.5em;
+}
+
+.editor h3 {
+  font-size: 1.25em;
+}
+
+.editor ul, .editor ol {
+  margin-left: 2em;
+  margin-bottom: 1em;
+}
+
+.editor li {
+  margin-bottom: 0.5em;
+}
+
+.editor blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--accent);
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.editor code {
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.editor pre {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.editor a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Placeholder for empty editor */
+.editor:empty:before {
+  content: "Start writing your thoughts...";
+  color: rgba(227, 227, 227, 0.4);
+  font-style: italic;
+}
+
+/* Editor toolbar buttons */
+.editor-toolbar button {
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-toolbar button:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.editor-toolbar button:active {
+  transform: scale(0.95);
+}
+
+/* Mood input in toolbar */
+.editor-toolbar input#mood {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--light);
+  padding: 0.5rem;
+}
+
+.editor-toolbar input#mood:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.editor-toolbar input#mood::placeholder {
+  color: rgba(227, 227, 227, 0.5);
+}
+
+/* Light theme editor adjustments */
+:root[data-theme="light"] .editor {
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+:root[data-theme="light"] .editor:empty:before {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="light"] .editor code {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .editor pre {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .editor-toolbar input#mood {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: var(--light);
+}
