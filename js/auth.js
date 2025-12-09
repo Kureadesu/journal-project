@@ -9,8 +9,16 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   sendEmailVerification,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+// Google Sign-In
+async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  const result = await signInWithPopup(auth, provider);
+  return result.user;
+}
 
 async function signUp(email, password, displayName) {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -43,7 +51,7 @@ function getCurrentUser() {
   return auth.currentUser;
 }
 
-export { signUp, signIn, logout, sendPasswordReset, onAuthStateChangedListener, getCurrentUser };
+export { signUp, signIn, logout, sendPasswordReset, onAuthStateChangedListener, getCurrentUser, signInWithGoogle };
 
 // Example usage (in your pages):
 // import { signIn, signUp, onAuthStateChangedListener } from './js/auth.js';
